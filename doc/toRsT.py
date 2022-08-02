@@ -15,12 +15,13 @@ def minus2plus(matchobj):
     return "\n" + '+' * len(matchobj.group(1)) + "\n"
 
 def cmdDoc2RsT(mod_name):
-    exec("import trepan.processor.command.%s as mod" %
-         (mod_name))
-    classnames = [ tup[0] for tup in
-                   inspect.getmembers(mod_name, inspect.isclass)
-                   if ('DebuggerCommand' != tup[0] and
-                       tup[0].endswith('Command')) ]
+    exec(f"import trepan.processor.command.{mod_name} as mod")
+    classnames = [
+        tup[0]
+        for tup in inspect.getmembers(mod_name, inspect.isclass)
+        if tup[0] != 'DebuggerCommand' and tup[0].endswith('Command')
+    ]
+
     cmd = None
     eval_cmd_template = 'cmd = mod.%s(cp)'
     for classname in classnames:
@@ -30,17 +31,12 @@ def cmdDoc2RsT(mod_name):
         except ImportError:
             pass
         except:
-            print('Error loading %s from %s: %s' %
-                  (classname, mod_name, sys.exc_info()[0]))
-            pass
-        pass
-
-    with open("commands/%s.rst" %
-                  (mod_name), "w") as fdoc:
-        ref = ".. _%s:" % (mod_name)
+            print(f'Error loading {classname} from {mod_name}: {sys.exc_info()[0]}')
+    with open(f"commands/{mod_name}.rst", "w") as fdoc:
+        ref = f".. _{mod_name}:"
         fdoc.write("%s\n\n" % ref)
 
-        title = '%s' % (camelcase(mod_name))
+        title = f'{camelcase(mod_name)}'
         fdoc.write("%s\n" % title)
         fdoc.write('-' * len(title) + '\n')
         if hasattr(cmd, '__doc__') and cmd.__doc__:
@@ -48,21 +44,20 @@ def cmdDoc2RsT(mod_name):
             fdoc.write(doc)
         else:
             print("Can't find __doc__ for %s" % mod_name)
-            pass
-        pass
     return
 
 
 def subCmdDoc2RsT():
+    cmd_instances  = []
+    eval_cmd_template = 'mod.%s(cp)'
     for mod_name in 'info set show'.split():
-        exec("import trepan.processor.command.%s as mod" %
-             (mod_name))
-        classnames = [ tup[0] for tup in
-                       inspect.getmembers(mod_name, inspect.isclass)
-                       if ('DebuggerCommand' != tup[0] and
-                           tup[0].endswith('Command')) ]
-        cmd_instances  = []
-        eval_cmd_template = 'mod.%s(cp)'
+        exec(f"import trepan.processor.command.{mod_name} as mod")
+        classnames = [
+            tup[0]
+            for tup in inspect.getmembers(mod_name, inspect.isclass)
+            if tup[0] != 'DebuggerCommand' and tup[0].endswith('Command')
+        ]
+
         for classname in classnames:
             eval_cmd = eval_cmd_template % classname
             try:
@@ -70,19 +65,14 @@ def subCmdDoc2RsT():
             except ImportError:
                 pass
             except:
-                print('Error loading %s from %s: %s' %
-                      (classname, mod_name, sys.exc_info()[0]))
-                pass
-            pass
-
+                print(f'Error loading {classname} from {mod_name}: {sys.exc_info()[0]}')
         subcmds = instance.cmds.subcmds
         for subname in subcmds:
-            with open("commands/%s/%s.rst" %
-                      (mod_name, subname), "w") as fdoc:
-                ref = ".. _%s_%s:" % (mod_name, subname)
+            with open(f"commands/{mod_name}/{subname}.rst", "w") as fdoc:
+                ref = f".. _{mod_name}_{subname}:"
                 fdoc.write("%s\n\n" % ref)
 
-                title = '%s %s' % (camelcase(mod_name), camelcase(subname))
+                title = f'{camelcase(mod_name)} {camelcase(subname)}'
                 fdoc.write("%s\n" % title)
                 fdoc.write('-' * len(title) + '\n')
                 subcmd = subcmds[subname]
@@ -91,10 +81,6 @@ def subCmdDoc2RsT():
                     fdoc.write(doc)
                 else:
                     print("Can't find __doc__ for %s" % subname)
-                    pass
-                pass
-            pass
-        pass
     return
 
 d = Mmock.MockDebugger()

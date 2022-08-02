@@ -60,14 +60,12 @@ color_scheme[Number]  = ('darkblue', 'turquoise')
 
 def format_token(ttype, token, colorscheme=color_scheme,
                  highlight='light' ):
-    if 'plain' == highlight: return token
-    dark_bg = 'dark' == highlight
+    if highlight == 'plain': return token
+    dark_bg = highlight == 'dark'
 
-    color = colorscheme.get(ttype)
-    if color:
+    if color := colorscheme.get(ttype):
         color = color[dark_bg]
         return ansiformat(color, token)
-        pass
     return token
 
 Arrow      = Name.Variable
@@ -91,7 +89,6 @@ class RstFilter(Filter):
 
     def __init__(self, **options):
         Filter.__init__(self, **options)
-        pass
 
     def filter(self, lexer, stream):
         last_was_heading_title = ''
@@ -99,17 +96,14 @@ class RstFilter(Filter):
             if ttype is Token.Name.Variable:
                 value = value[1:-1]
                 last_was_heading_title  = ''
-                pass
             if ttype is Token.Generic.Emph:
                 value = value[1:-1]
                 last_was_heading_title  = ''
-                pass
             elif ttype is Token.Generic.Strong:
                 value = value[2:-2]
                 last_was_heading_title = ''
-                pass
             elif ttype is Token.Text and last_was_heading_title \
-              and value == "\n":
+                  and value == "\n":
                 value = ''
             elif ttype is Token.Generic.Heading:
                 # Remove the underline line following a section header
@@ -117,16 +111,14 @@ class RstFilter(Filter):
                 # Header
                 # ------ <- remove this line
                 if last_was_heading_title and \
-                  re.match(r'^(?:[=]|[-])+$', value):
+                      re.match(r'^(?:[=]|[-])+$', value):
                     value = ''
                     last_was_heading_title = ''
                 else:
                     # We store the entire string in case someday we want to
                     # match whether the underline size matches the title size
                     last_was_heading_title  = value
-                    pass
             yield ttype, value
-            pass
         return
     pass
 
@@ -175,10 +167,9 @@ class RSTTerminalFormatter(Formatter):
         # hack: if the output is a terminal and has an encoding set,
         # use that to avoid unicode encode problems
         if not self.encoding and hasattr(outfile, "encoding") and \
-           hasattr(outfile, "isatty") and outfile.isatty() and \
-           sys.version_info < (3,):
+               hasattr(outfile, "isatty") and outfile.isatty() and \
+               sys.version_info < (3,):
             self.encoding = outfile.encoding
-            pass
         self.outfile = outfile
         return Formatter.format(self, tokensource, outfile)
 
@@ -190,7 +181,6 @@ class RSTTerminalFormatter(Formatter):
             color = cs[self.darkbg]
         else:
             color = None
-            pass
         return self.write(text, color)
 
     def write(self, text, color):
@@ -226,24 +216,18 @@ class RSTTerminalFormatter(Formatter):
             else:
                 self.write(' ', color)
                 text = text[:-1]
-                pass
             self.last_was_nl = True
-            if '' == text: return
+            if text == '': return
             while text[-1] == '\n':
                 self.write_nl()
                 text = text[:-1]
-                if '' == text: return
-                pass
-            pass
+                if text == '': return
         else:
             self.last_was_nl = False
-            pass
         self.in_list = False
         if last_last_nl:
-            if ' * ' == text[0:3]: self.in_list = True
-            elif '  ' == text[0:2]: self.verbatim = True
-            pass
-
+            if text[:3] == ' * ': self.in_list = True
+            elif text[:2] == '  ': self.verbatim = True
         # FIXME: there may be nested lists, tables and so on.
         if self.verbatim:
             self.write_verbatim(text)
@@ -256,19 +240,13 @@ class RSTTerminalFormatter(Formatter):
                 # print "column: %d, word %s" % (self.column, word)
                 if (self.column + len(word) + 1) >= self.width:
                     self.write_nl()
-                    pass
-                if not (self.column == 0 and word == ''):
-                    self.write(word + ' ', color)
-                    pass
-                pass
+                if self.column != 0 or word != '':
+                    self.write(f'{word} ', color)
             if words[-1]:
                 # print "column2: %d, word %r" % (self.column, words[-1])
                 if (self.column + len(words[-1])) >= self.width:
                     self.write_nl()
-                    pass
                 self.write(words[-1], color)
-                pass
-            pass
         return
 
     def format_unencoded(self, tokensource, outfile):
@@ -277,10 +255,8 @@ class RSTTerminalFormatter(Formatter):
             while color is None:
                 ttype = ttype[:-1]
                 color = self.colorscheme.get(ttype)
-                pass
             if color: color = color[self.darkbg]
             self.reflow_text(text, color)
-            pass
         return
     pass
 
@@ -290,15 +266,11 @@ class MonoRSTTerminalFormatter(RSTTerminalFormatter):
         for ttype, text in tokensource:
             if ttype is Token.Name.Variable:
                 text = '"%s"' % text
-                pass
             elif ttype is Token.Generic.Emph:
-                text = "*%s*" % text
-                pass
+                text = f"*{text}*"
             elif ttype is Token.Generic.Strong:
                 text = text.upper()
-                pass
             self.reflow_text(text, None)
-            pass
         return
     pass
 
@@ -308,18 +280,12 @@ class MonoTerminalFormatter(TerminalFormatter):
         for ttype, text in tokensource:
             if ttype is Token.Name.Variable:
                 text = '"%s"' % text
-                pass
             elif ttype is Token.Generic.Emph:
                 type
-                text = "*%s*" % text
-                pass
+                text = f"*{text}*"
             elif ttype is Token.Generic.Strong:
                 text = text.upper()
-                pass
-            pass
-
             outfile.write(text)
-            pass
         return
     pass
 
@@ -331,11 +297,7 @@ mono_tf  = MonoRSTTerminalFormatter()
 
 
 def rst_text(text, mono, width=80):
-    if mono:
-        tf = mono_tf
-    else:
-        tf = color_tf
-        pass
+    tf = mono_tf if mono else color_tf
     tf.reset(width)
     return highlight(text, rst_lex, tf)
 
@@ -346,15 +308,12 @@ def syntax_highlight_file(input_filename, to_stdout=False, bg='light',
         out_filename = None
     else:
         basename = os.path.basename(input_filename)
-        out_filename = mktemp('.term', basename + '_')
+        out_filename = mktemp('.term', f'{basename}_')
         try:
             outfile = open(out_filename, 'w')
         except:
-            print("Unexpected error in opening output file %s" % out_filename)
+            print(f"Unexpected error in opening output file {out_filename}")
             sys.exit(1)
-            pass
-        pass
-
     if input_filename:
         if not os.path.exists(input_filename):
             sys.stderr.write("input file %s doesn't exist\n" % input_filename)
@@ -362,14 +321,10 @@ def syntax_highlight_file(input_filename, to_stdout=False, bg='light',
         try:
             infile = open(input_filename)
         except:
-            print("Unexpected error in opening input file %s" % input_filename)
+            print(f"Unexpected error in opening input file {input_filename}")
             sys.exit(2)
-            pass
-        pass
     else:
         infile = sys.stdin
-        pass
-
     if style:
         formatter = Terminal256Formatter(bg=bg, style=style)
     else:
@@ -383,15 +338,9 @@ def syntax_highlight_file(input_filename, to_stdout=False, bg='light',
                 exec(code)
         except:
             sys.exit(10)
-            pass
-        pass
-
-
     for code_line in infile.readlines():
         line = highlight(code_line, BashLexer(), formatter).strip("\r\n")
         outfile.write(line + "\n")
-        # print line,
-        pass
     outfile.close
     if out_filename:
         print(out_filename)
@@ -406,14 +355,10 @@ def print_rst_file(input_filename, tf, width, to_stdout=False, bg='light',
         try:
             infile = open(input_filename)
         except:
-            print("Unexpected error in opening input file %s" % input_filename)
+            print(f"Unexpected error in opening input file {input_filename}")
             sys.exit(2)
-            pass
-        pass
     else:
         infile = sys.stdin
-        pass
-
     string = infile.read()
     tf.reset(width)
     print(highlight(string, rst_lex, tf))
@@ -440,7 +385,7 @@ def main():
                              "bg=", "colors=", 'style=', 'width='])
     except GetoptError as err:
         # print help information and exit:
-        print(str(err))  # will print something like "option -a not recognized"
+        print(err)
         usage()
     dark_light = 'light'
     colors_file = None
@@ -468,7 +413,7 @@ def main():
             format_to_rst = True
         elif o in ("-S", "--style"):
             if a not in style_names:
-                sys.stderr.write('style name %s not found. Valid style names are: ' % a)
+                sys.stderr.write(f'style name {a} not found. Valid style names are: ')
                 sys.stderr.write(', '.join(style_names))
                 sys.exit(1)
             style_name = a
@@ -477,8 +422,7 @@ def main():
         elif o in ("-w", "--width"):
             width = int(a)
         else:
-            assert False, "unhandled option %s" % o
-        pass
+            assert False, f"unhandled option {o}"
     if len(args) == 0:
         to_stdout = True
         filename = None
@@ -486,16 +430,13 @@ def main():
         filename = args[0]
     else:
         sys.exit(3)
-        pass
     if format_to_rst:
         print_rst_file(filename, color_tf, width, to_stdout, bg=dark_light,
                        colors_file=colors_file, style=style_name)
     else:
         syntax_highlight_file(filename, to_stdout, bg=dark_light,
                               colors_file=colors_file, style=style_name)
-    pass
 
 
 if __name__ == '__main__':
     main()
-    pass
